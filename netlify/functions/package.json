@@ -1,0 +1,9 @@
+{
+  "name": "evidence-kilometru-functions",
+  "version": "1.0.0",
+  "description": "Netlify functions for Evidence Kilometrů API",
+  "main": "api.js",
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
+  }
+}
