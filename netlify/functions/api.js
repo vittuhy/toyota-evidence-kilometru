@@ -1,86 +1,25 @@
-const https = require('https');
-const jwt = require('jsonwebtoken');
+const { google } = require('googleapis');
 
 const SHEET_ID = '1QvIQpN0Yr4dee1aNf3_ubwyWpWCIULfRWOOAqWAmywM'; // Your sheet ID
 const SHEET_NAME = 'Sheet1'; // Change if your sheet/tab is named differently
 
-function makeRequest(url, options = {}) {
-  return new Promise((resolve, reject) => {
-    const req = https.request(url, options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => data += chunk);
-      res.on('end', () => {
-        try {
-          const jsonData = JSON.parse(data);
-          resolve({ status: res.statusCode, data: jsonData });
-        } catch (e) {
-          resolve({ status: res.statusCode, data });
-        }
-      });
-    });
-    
-    req.on('error', reject);
-    
-    if (options.body) {
-      req.write(options.body);
-    }
-    
-    req.end();
-  });
-}
-
-async function getAccessToken() {
+function getDoc() {
   const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
-  
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    iss: creds.client_email,
-    scope: 'https://www.googleapis.com/auth/spreadsheets',
-    aud: 'https://oauth2.googleapis.com/token',
-    exp: now + 3600,
-    iat: now
-  };
-  
-  const token = jwt.sign(payload, creds.private_key, { algorithm: 'RS256' });
-  
-  const tokenResponse = await makeRequest('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`
+  const auth = new google.auth.GoogleAuth({
+    credentials: creds,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
-  
-  return tokenResponse.data.access_token;
-}
-
-async function makeGoogleRequest(endpoint, method = 'GET', body = null) {
-  const accessToken = await getAccessToken();
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}${endpoint}`;
-  
-  const options = {
-    method,
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    }
-  };
-  
-  if (body) {
-    options.body = JSON.stringify(body);
-  }
-  
-  const response = await makeRequest(url, options);
-  if (response.status >= 400) {
-    throw new Error(`Google API error: ${response.status}`);
-  }
-  
-  return response.data;
+  return google.sheets({ version: 'v4', auth });
 }
 
 async function getRows() {
-  const response = await makeGoogleRequest(`/values/${SHEET_NAME}!A2:D`);
-  const rows = response.values || [];
+  const sheets = getDoc();
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${SHEET_NAME}!A2:D`,
+  });
+  
+  const rows = response.data.values || [];
   return rows.map(([id, date, totalKm, createdAt]) => ({
     id: Number(id),
     date,
@@ -90,13 +29,15 @@ async function getRows() {
 }
 
 async function appendRow(record) {
-  await makeGoogleRequest(`/values/${SHEET_NAME}!A:D:append`, 'POST', {
+  const sheets = getDoc();
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID,
+    range: `${SHEET_NAME}!A:D`,
     valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
-    data: [{
-      range: `${SHEET_NAME}!A:D`,
+    requestBody: {
       values: [[record.id, record.date, record.totalKm, record.createdAt]]
-    }]
+    },
   });
 }
 
@@ -106,12 +47,14 @@ async function updateRow(id, newData) {
   if (rowIndex === -1) return false;
   
   const rowNumber = rowIndex + 2; // +2 because of header and 0-index
-  await makeGoogleRequest(`/values/${SHEET_NAME}!A${rowNumber}:D${rowNumber}`, 'PUT', {
+  const sheets = getDoc();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `${SHEET_NAME}!A${rowNumber}:D${rowNumber}`,
     valueInputOption: 'RAW',
-    data: [{
-      range: `${SHEET_NAME}!A${rowNumber}:D${rowNumber}`,
+    requestBody: {
       values: [[id, newData.date, newData.totalKm, newData.createdAt]]
-    }]
+    },
   });
   return true;
 }
@@ -122,17 +65,21 @@ async function deleteRow(id) {
   if (rowIndex === -1) return false;
   
   const rowNumber = rowIndex + 2; // +2 for header
-  await makeGoogleRequest('', 'POST', {
-    requests: [{
-      deleteDimension: {
-        range: {
-          sheetId: 0, // Default first sheet
-          dimension: 'ROWS',
-          startIndex: rowNumber - 1,
-          endIndex: rowNumber,
+  const sheets = getDoc();
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: {
+      requests: [{
+        deleteDimension: {
+          range: {
+            sheetId: 0, // Default first sheet
+            dimension: 'ROWS',
+            startIndex: rowNumber - 1,
+            endIndex: rowNumber,
+          },
         },
-      },
-    }]
+      }],
+    },
   });
   return true;
 }

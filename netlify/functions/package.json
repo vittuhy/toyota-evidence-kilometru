@@ -4,6 +4,6 @@
   "description": "Netlify functions for Evidence Kilometrů API",
   "main": "api.js",
   "dependencies": {
-    "jsonwebtoken": "^9.0.2"
+    "googleapis": "^152.0.0"
   }
 }
