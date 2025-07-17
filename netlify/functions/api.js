@@ -144,12 +144,15 @@ const corsHeaders = {
 };
 
 exports.handler = async (event) => {
+  console.log('Function called with event:', JSON.stringify(event, null, 2));
+  
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: corsHeaders, body: '' };
   }
   try {
     const { path: requestPath, httpMethod, body } = event;
     const endpoint = requestPath.replace('/.netlify/functions/api', '');
+    console.log('Processing endpoint:', endpoint, 'with method:', httpMethod);
 
     // Health check
     if (endpoint === '/health' && httpMethod === 'GET') {
@@ -248,10 +251,15 @@ exports.handler = async (event) => {
     };
   } catch (error) {
     console.error('Function error:', error);
+    console.error('Error stack:', error.stack);
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      body: JSON.stringify({ error: 'Internal server error' }),
+      body: JSON.stringify({ 
+        error: 'Internal server error', 
+        message: error.message,
+        stack: error.stack 
+      }),
     };
   }
 }; 
