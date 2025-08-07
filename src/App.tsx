@@ -16,7 +16,7 @@ interface Stats {
   isUnderLimit: boolean;
 }
 
-const MONTHLY_LIMIT = 1750;
+const MONTHLY_LIMIT = 1665;
 
 function getMonthKey(date: Date) {
   return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -238,7 +238,7 @@ const MonthlyChart: React.FC<MonthlyChartProps> = ({ monthlyStats }) => {
   if (monthlyStats.length === 0) return null;
 
   // Use monthlyStats directly (oldest to newest) instead of reversing
-  const maxKm = Math.max(...monthlyStats.map(m => m.km), 1750);
+      const maxKm = Math.max(...monthlyStats.map(m => m.km), 1665);
   const minKm = 0; // Always start from 0 for monthly kilometers
   const range = maxKm - minKm;
 
@@ -319,9 +319,9 @@ const MonthlyChart: React.FC<MonthlyChartProps> = ({ monthlyStats }) => {
           {/* Limit line */}
           <line
             x1={padding}
-            y1={padding + availableHeight - ((1750 - minKm) / range) * availableHeight}
+            y1={padding + availableHeight - ((1665 - minKm) / range) * availableHeight}
             x2={padding + availableWidth}
-            y2={padding + availableHeight - ((1750 - minKm) / range) * availableHeight}
+            y2={padding + availableHeight - ((1665 - minKm) / range) * availableHeight}
             stroke="#EF4444"
             strokeWidth="2"
             strokeDasharray="4,4"
@@ -565,13 +565,14 @@ const KilometersTracker: React.FC = () => {
   const lastRecord = sortedByDate[sortedByDate.length - 1];
   const lastRecordDate = lastRecord ? new Date(lastRecord.date) : null;
 
-  // Výpočet dnů od začátku leasingu do posledního záznamu
-  const daysElapsedFromStart = lastRecordDate ? Math.ceil((lastRecordDate.getTime() - leaseStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1 : 0;
+  // Výpočet dnů od začátku leasingu do dneška
+  const today = new Date();
+  const daysElapsedFromStart = Math.ceil((today.getTime() - leaseStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-  // Průměr/den podle posledního záznamu
+  // Průměr/den podle posledního záznamu (předpokládáme stejný stav do dneška)
   const avgKmPerDay = (lastRecord && daysElapsedFromStart > 0) ? Math.round((lastRecord.totalKm / daysElapsedFromStart) * 10) / 10 : null;
 
-  // Celkový odhad podle posledního záznamu
+  // Celkový odhad podle posledního záznamu (předpokládáme stejný stav do dneška)
   const totalProjection = (lastRecord && daysElapsedFromStart > 0)
     ? Math.round((lastRecord.totalKm / daysElapsedFromStart) * 730)
     : null;
@@ -735,7 +736,6 @@ const KilometersTracker: React.FC = () => {
 
   // Removed unused formatDate and sortedRecords variables
 
-  const today = new Date();
   const LEASE_END = '2027-07-08';
   const leaseEndDate = new Date(LEASE_END);
   const totalLeaseDays = Math.ceil((leaseEndDate.getTime() - leaseStartDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -945,7 +945,7 @@ const KilometersTracker: React.FC = () => {
             </div>
             <div className="flex items-center gap-1">
               <div className="w-3 h-0.5 bg-red-500 border-dashed"></div>
-              <span className="text-gray-400">Limit 1,750 km</span>
+                              <span className="text-gray-400">Limit 1,665 km</span>
             </div>
           </div>
           
@@ -957,7 +957,7 @@ const KilometersTracker: React.FC = () => {
                 <div className="text-sm text-gray-300 flex-1">{getMonthLabelShort(m.start)}</div>
                 <div className="text-sm font-semibold text-right whitespace-nowrap flex-1">
                   <span className={m.over ? 'text-red-400' : 'text-green-400'}>{m.km.toLocaleString()}</span>
-                  <span className="text-white"> / 1,750 km</span>
+                  <span className="text-white"> / 1,665 km</span>
                 </div>
                 <div className={`text-sm font-semibold text-right ${m.over ? 'text-red-400' : 'text-green-400'} flex-1`}>
                   {m.diff > 0 ? `- ${m.diff.toLocaleString()} km` : `+ ${Math.abs(m.diff).toLocaleString()} km`}
