@@ -16,7 +16,19 @@ interface Stats {
   isUnderLimit: boolean;
 }
 
-const MONTHLY_LIMIT = 1665;
+// Calculate monthly allowance based on actual days in month and lease start date
+function getMonthlyAllowance(year: number, month: number, leaseStartDate: Date): number {
+  const monthStart = new Date(year, month, 1);
+  const monthEnd = new Date(year, month + 1, 0); // Last day of month
+  
+  // If this is the lease start month, start from lease start date
+  const startDate = (year === leaseStartDate.getFullYear() && month === leaseStartDate.getMonth()) 
+    ? leaseStartDate 
+    : monthStart;
+  
+  const daysInMonth = Math.ceil((monthEnd.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  return daysInMonth * 55; // 55 km per day
+}
 
 function getMonthKey(date: Date) {
   return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -47,6 +59,7 @@ interface RecordHistoryProps {
     km: number;
     diff: number;
     over: boolean;
+    monthlyAllowance: number;
     first: MileageRecord | null;
     last: MileageRecord | null;
   }>;
@@ -200,6 +213,7 @@ interface MonthlyChartProps {
     km: number;
     diff: number;
     over: boolean;
+    monthlyAllowance: number;
     first: MileageRecord | null;
     last: MileageRecord | null;
   }>;
@@ -238,7 +252,7 @@ const MonthlyChart: React.FC<MonthlyChartProps> = ({ monthlyStats }) => {
   if (monthlyStats.length === 0) return null;
 
   // Use monthlyStats directly (oldest to newest) instead of reversing
-      const maxKm = Math.max(...monthlyStats.map(m => m.km), 1665);
+  const maxKm = Math.max(...monthlyStats.map(m => Math.max(m.km, m.monthlyAllowance)), 1666);
   const minKm = 0; // Always start from 0 for monthly kilometers
   const range = maxKm - minKm;
 
@@ -316,12 +330,12 @@ const MonthlyChart: React.FC<MonthlyChartProps> = ({ monthlyStats }) => {
           className="absolute inset-0"
           style={{ width: effectiveWidth, height: chartHeight }}
         >
-          {/* Limit line */}
+          {/* Fixed limit line at 1666 km */}
           <line
             x1={padding}
-            y1={padding + availableHeight - ((1665 - minKm) / range) * availableHeight}
+            y1={padding + availableHeight - ((1666 - minKm) / range) * availableHeight}
             x2={padding + availableWidth}
-            y2={padding + availableHeight - ((1665 - minKm) / range) * availableHeight}
+            y2={padding + availableHeight - ((1666 - minKm) / range) * availableHeight}
             stroke="#EF4444"
             strokeWidth="2"
             strokeDasharray="4,4"
@@ -489,7 +503,7 @@ const KilometersTracker: React.FC = () => {
   const TOTAL_ALLOWED_KM = 40000; // 20,000 km/rok * 2 roky
   const TOLERANCE_KM = 3000; // Tolerovaný nadlimit
   const TOTAL_WITH_TOLERANCE = TOTAL_ALLOWED_KM + TOLERANCE_KM; // 43,000 km
-  const DAILY_ALLOWED_KM = 54.8; // 20,000 / 365
+  const DAILY_ALLOWED_KM = 55; // 55 km per day
 
   useEffect(() => {
     // Check localStorage for login
@@ -647,8 +661,9 @@ const KilometersTracker: React.FC = () => {
       }
     }
 
-    const diff = km - MONTHLY_LIMIT;
-    return { ...month, km, diff, over: diff > 0, first: monthRecords[0] || null, last: monthRecords[monthRecords.length - 1] || null };
+    const monthlyAllowance = getMonthlyAllowance(month.start.getFullYear(), month.start.getMonth(), leaseStartDate);
+    const diff = km - monthlyAllowance;
+    return { ...month, km, diff, over: diff > 0, monthlyAllowance, first: monthRecords[0] || null, last: monthRecords[monthRecords.length - 1] || null };
   });
 
   // Prefill today's date for new record
@@ -945,7 +960,7 @@ const KilometersTracker: React.FC = () => {
             </div>
             <div className="flex items-center gap-1">
               <div className="w-3 h-0.5 bg-red-500 border-dashed"></div>
-                              <span className="text-gray-400">Limit 1,665 km</span>
+              <span className="text-gray-400">Limit 1,666 km</span>
             </div>
           </div>
           
@@ -957,7 +972,7 @@ const KilometersTracker: React.FC = () => {
                 <div className="text-sm text-gray-300 flex-1">{getMonthLabelShort(m.start)}</div>
                 <div className="text-sm font-semibold text-right whitespace-nowrap flex-1">
                   <span className={m.over ? 'text-red-400' : 'text-green-400'}>{m.km.toLocaleString()}</span>
-                  <span className="text-white"> / 1,665 km</span>
+                  <span className="text-white"> / {m.monthlyAllowance.toLocaleString()} km</span>
                 </div>
                 <div className={`text-sm font-semibold text-right ${m.over ? 'text-red-400' : 'text-green-400'} flex-1`}>
                   {m.diff > 0 ? `- ${m.diff.toLocaleString()} km` : `+ ${Math.abs(m.diff).toLocaleString()} km`}
