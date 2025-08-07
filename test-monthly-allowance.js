@@ -12,7 +12,7 @@ function getMonthlyAllowance(year, month, leaseStartDate) {
     : monthStart;
   
   const daysInMonth = Math.ceil((monthEnd.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  return daysInMonth * 55; // 55 km per day
+  return Math.round(daysInMonth * (20000 / 365)); // 20,000 km / 365 days = 54.79 km/day
 }
 
 // Test different months
@@ -21,23 +21,23 @@ console.log('=======================');
 
 // July 2025 (lease start month - starts on 8th)
 const julyAllowance = getMonthlyAllowance(2025, 6, leaseStartDate); // month is 0-indexed
-console.log(`July 2025 (8th-31st): ${julyAllowance} km (${julyAllowance/55} days)`);
+console.log(`July 2025 (8th-31st): ${julyAllowance} km (${julyAllowance/(20000/365)} days)`);
 
 // August 2025 (full month)
 const augustAllowance = getMonthlyAllowance(2025, 7, leaseStartDate);
-console.log(`August 2025 (1st-31st): ${augustAllowance} km (${augustAllowance/55} days)`);
+console.log(`August 2025 (1st-31st): ${augustAllowance} km (${augustAllowance/(20000/365)} days)`);
 
 // September 2025 (30 days)
 const septemberAllowance = getMonthlyAllowance(2025, 8, leaseStartDate);
-console.log(`September 2025 (1st-30th): ${septemberAllowance} km (${septemberAllowance/55} days)`);
+console.log(`September 2025 (1st-30th): ${septemberAllowance} km (${septemberAllowance/(20000/365)} days)`);
 
 // February 2026 (28 days, not leap year)
 const febAllowance = getMonthlyAllowance(2026, 1, leaseStartDate);
-console.log(`February 2026 (1st-28th): ${febAllowance} km (${febAllowance/55} days)`);
+console.log(`February 2026 (1st-28th): ${febAllowance} km (${febAllowance/(20000/365)} days)`);
 
 // December 2025 (31 days)
 const decAllowance = getMonthlyAllowance(2025, 11, leaseStartDate);
-console.log(`December 2025 (1st-31st): ${decAllowance} km (${decAllowance/55} days)`);
+console.log(`December 2025 (1st-31st): ${decAllowance} km (${decAllowance/(20000/365)} days)`);
 
 console.log('\nExpected vs Old Fixed Limit:');
 console.log('============================');

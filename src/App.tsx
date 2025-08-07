@@ -27,7 +27,7 @@ function getMonthlyAllowance(year: number, month: number, leaseStartDate: Date):
     : monthStart;
   
   const daysInMonth = Math.ceil((monthEnd.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  return daysInMonth * 55; // 55 km per day
+  return Math.round(daysInMonth * (20000 / 365)); // 20,000 km / 365 days = 54.79 km/day
 }
 
 function getMonthKey(date: Date) {
@@ -503,7 +503,7 @@ const KilometersTracker: React.FC = () => {
   const TOTAL_ALLOWED_KM = 40000; // 20,000 km/rok * 2 roky
   const TOLERANCE_KM = 3000; // Tolerovaný nadlimit
   const TOTAL_WITH_TOLERANCE = TOTAL_ALLOWED_KM + TOLERANCE_KM; // 43,000 km
-  const DAILY_ALLOWED_KM = 55; // 55 km per day
+  const DAILY_ALLOWED_KM = 20000 / 365; // 20,000 km / 365 days = 54.79 km/day
 
   useEffect(() => {
     // Check localStorage for login
