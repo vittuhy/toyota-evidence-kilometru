@@ -971,18 +971,22 @@ const KilometersTracker: React.FC = () => {
 
           
           <div className="space-y-2">
-            {[...monthlyStats].reverse().map((m) => (
-              <div key={m.key} className="flex justify-between items-center">
-                <div className="text-sm text-gray-300 flex-1">{getMonthLabelShort(m.start)}</div>
-                <div className="text-sm font-semibold text-right whitespace-nowrap flex-1">
-                  <span className={m.over ? 'text-red-400' : 'text-green-400'}>{m.km.toLocaleString()}</span>
-                  <span className="text-white"> / {m.monthlyAllowance.toLocaleString()} km</span>
-                </div>
-                <div className={`text-sm font-semibold text-right ${m.over ? 'text-red-400' : 'text-green-400'} flex-1`}>
-                  {m.diff > 0 ? `- ${m.diff.toLocaleString()} km` : `+ ${Math.abs(m.diff).toLocaleString()} km`}
-                </div>
-              </div>
-            ))}
+            <table className="w-full">
+              <tbody>
+                {[...monthlyStats].reverse().map((m) => (
+                  <tr key={m.key} className="border-b border-gray-700">
+                    <td className="text-sm text-gray-300 py-2 w-16">{getMonthLabelShort(m.start)}</td>
+                    <td className="text-sm font-semibold text-right whitespace-nowrap py-2">
+                      <span className={m.over ? 'text-red-400' : 'text-green-400'}>{m.km.toLocaleString()}</span>
+                      <span className="text-white"> / {m.monthlyAllowance.toLocaleString()} km</span>
+                    </td>
+                    <td className={`text-sm font-semibold text-right whitespace-nowrap py-2 ${m.over ? 'text-red-400' : 'text-green-400'}`}>
+                      {m.diff > 0 ? `- ${m.diff.toLocaleString()} km` : `+ ${Math.abs(m.diff).toLocaleString()} km`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
