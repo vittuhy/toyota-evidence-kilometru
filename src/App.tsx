@@ -809,7 +809,7 @@ const KilometersTracker: React.FC = () => {
             setRecords(records.map(r => r.id === todayRecord.id ? updatedRecord : r));
             setFetchStatus({ 
               type: 'success', 
-              message: `Přidáno: ${fetchedMileage.toLocaleString('cs-CZ')} km${result.vehicle ? ` z ${result.vehicle}` : ''}` 
+              message: `Přidáno: ${fetchedMileage.toLocaleString('cs-CZ')} km z Toyota Corolla TS` 
             });
           }
         } else {
@@ -825,7 +825,7 @@ const KilometersTracker: React.FC = () => {
             setRecords([...records, newRecord]);
             setFetchStatus({ 
               type: 'success', 
-              message: `Přidáno: ${fetchedMileage.toLocaleString('cs-CZ')} km${result.vehicle ? ` z ${result.vehicle}` : ''}` 
+              message: `Přidáno: ${fetchedMileage.toLocaleString('cs-CZ')} km z Toyota Corolla TS` 
             });
           } else if (!lastRecord || lastRecord.totalKm !== fetchedMileage) {
             // Different value or no previous records = create new record
@@ -837,7 +837,7 @@ const KilometersTracker: React.FC = () => {
             setRecords([...records, newRecord]);
             setFetchStatus({ 
               type: 'success', 
-              message: `Přidáno: ${fetchedMileage.toLocaleString('cs-CZ')} km${result.vehicle ? ` z ${result.vehicle}` : ''}` 
+              message: `Přidáno: ${fetchedMileage.toLocaleString('cs-CZ')} km z Toyota Corolla TS` 
             });
           }
         }
