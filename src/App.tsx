@@ -514,6 +514,7 @@ const KilometersTracker: React.FC = () => {
   const formRef = useRef<HTMLDivElement>(null);
   const [isFetchingMileage, setIsFetchingMileage] = useState<boolean>(false);
   const [fetchStatus, setFetchStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
+  const [isLoadingRecords, setIsLoadingRecords] = useState<boolean>(true);
 
   // Konstanty pro leasing
   const LEASE_START = '2025-07-08';
@@ -545,13 +546,19 @@ const KilometersTracker: React.FC = () => {
   // Načtení dat při spuštění
   useEffect(() => {
     const loadRecords = async () => {
+      setIsLoadingRecords(true);
       try {
         const records = await apiService.getRecords();
         setRecords(records);
+        console.log('Loaded records:', records.length);
       } catch (error) {
         console.error('Error loading records:', error);
+        // Show error message to user
+        alert(`Chyba při načítání dat: ${error instanceof Error ? error.message : 'Neznámá chyba'}`);
         // Fallback to empty array if there's an error
         setRecords([]);
+      } finally {
+        setIsLoadingRecords(false);
       }
     };
 
@@ -1035,8 +1042,18 @@ const KilometersTracker: React.FC = () => {
 
 
       <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+        {/* Loading indicator */}
+        {isLoadingRecords && (
+          <div className="bg-gray-800 rounded-lg p-6">
+            <div className="flex items-center justify-center gap-3">
+              <RefreshCw className="h-5 w-5 animate-spin text-blue-400" />
+              <span className="text-gray-400">Načítání dat...</span>
+            </div>
+          </div>
+        )}
+        
         {/* Statistiky */}
-        {stats && (
+        {!isLoadingRecords && stats && (
           <div className="bg-gray-800 rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4">Přehled</h2>
             
@@ -1160,12 +1177,14 @@ const KilometersTracker: React.FC = () => {
         </div>
 
         {/* Historie záznamů */}
-        <RecordHistory
-          records={records}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          monthlyStats={monthlyStats}
-        />
+        {!isLoadingRecords && (
+          <RecordHistory
+            records={records}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            monthlyStats={monthlyStats}
+          />
+        )}
       </div>
     </div>
   );

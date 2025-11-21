@@ -20,7 +20,7 @@ export interface UpdateRecordData {
 
 class ApiService {
   private isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  private API_BASE_URL = process.env.REACT_APP_API_URL || '/.netlify/functions/api';
+  private API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     // For localhost, use localStorage instead of API calls
