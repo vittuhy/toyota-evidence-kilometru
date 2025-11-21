@@ -273,6 +273,8 @@ async function fetchToyotaMileage() {
 }
 
 function getDoc() {
+  console.log('getDoc called, google object:', typeof google, google ? Object.keys(google) : 'null');
+  console.log('google.auth:', google?.auth);
   const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
   const auth = new google.auth.GoogleAuth({
     credentials: creds,
