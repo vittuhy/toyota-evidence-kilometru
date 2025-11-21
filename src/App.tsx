@@ -691,9 +691,17 @@ const KilometersTracker: React.FC = () => {
         date: new Date().toISOString().slice(0, 10),
         totalKm: ''
       });
+      // Use longer timeout for mobile to ensure keyboard appears
       setTimeout(() => {
-        mileageInputRef.current?.focus();
-      }, 100);
+        if (mileageInputRef.current) {
+          mileageInputRef.current.focus();
+          // Force focus on mobile devices - click first then focus
+          mileageInputRef.current.click();
+          setTimeout(() => {
+            mileageInputRef.current?.focus();
+          }, 50);
+        }
+      }, 300);
     }
   }, [showAddForm, editingRecord]);
 
@@ -701,9 +709,17 @@ const KilometersTracker: React.FC = () => {
   useEffect(() => {
     if (showAddForm && (editingRecord || formRef.current)) {
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Use longer timeout for mobile to ensure keyboard appears
       setTimeout(() => {
-        mileageInputRef.current?.focus();
-      }, 100);
+        if (mileageInputRef.current) {
+          mileageInputRef.current.focus();
+          // Force focus on mobile devices - click first then focus
+          mileageInputRef.current.click();
+          setTimeout(() => {
+            mileageInputRef.current?.focus();
+          }, 50);
+        }
+      }, 300);
     }
   }, [showAddForm, editingRecord]);
 
@@ -901,25 +917,14 @@ const KilometersTracker: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* Odhlásit - ikona (vlevo) - skrytá při načítání */}
-              {!isFetchingMileage && (
-                <button
-                  onClick={handleLogout}
-                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-                  title="Odhlásit"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
-              )}
-              
-              {/* Manuální přidání - ikona (uprostřed, méně výrazná) - skrytá při načítání */}
+              {/* Manuální přidání - ikona (vlevo) */}
               {!isFetchingMileage && (
                 <button
                   onClick={() => setShowAddForm(!showAddForm)}
                   className={`p-2 rounded-lg transition-colors ${
                     showAddForm 
-                      ? 'text-red-400 hover:text-red-300 hover:bg-gray-700' 
-                      : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700'
+                      ? 'text-red-400 hover:text-red-300 border-2 border-red-400 bg-gray-700' 
+                      : 'text-gray-400 hover:text-gray-300 bg-gray-700 md:hover:bg-gray-700 md:bg-transparent border-2 border-transparent'
                   }`}
                   title={showAddForm ? 'Zavřít formulář' : 'Přidat záznam ručně'}
                 >
@@ -997,11 +1002,13 @@ const KilometersTracker: React.FC = () => {
                 <label className="block text-sm font-medium mb-2">Celkový nájezd (km)</label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   ref={mileageInputRef}
                   value={formData.totalKm}
                   onChange={(e) => setFormData({...formData, totalKm: e.target.value})}
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="např. 15000"
+                  autoFocus
                   required
                 />
               </div>
