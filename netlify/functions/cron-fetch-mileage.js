@@ -355,9 +355,13 @@ exports.handler = async (event, context) => {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   };
   
+  // Handle OPTIONS request for CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: corsHeaders, body: '' };
   }
+  
+  // Wrap everything in try-catch to ensure we always return proper response
+  try {
   
   try {
     console.log('Starting CRON fetch mileage process...');
