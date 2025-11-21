@@ -97,7 +97,15 @@ const RecordHistory: React.FC<RecordHistoryProps> = ({ records, onEdit, onDelete
         const recordDate = new Date(record.date);
         return recordDate.getFullYear() === year && recordDate.getMonth() === month - 1;
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Newest first
+      .sort((a, b) => {
+        // First sort by date (newest first)
+        const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (dateDiff !== 0) return dateDiff;
+        // If same date, sort by createdAt or id (newest first)
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : a.id;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : b.id;
+        return timeB - timeA;
+      });
   };
 
   const formatDate = (dateString: string): string => {
