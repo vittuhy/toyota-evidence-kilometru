@@ -2,8 +2,8 @@ name: CRON Fetch Mileage
 
 on:
   schedule:
-    # Run daily at 12:30 CET (winter time) = 11:30 UTC
-    # For summer time (CEST), change to: '30 10 * * *'
+    # Run daily at 12:32 CET (winter time) = 11:32 UTC
+    # For summer time (CEST), change to: '32 10 * * *'
     - cron: '32 11 * * *'
   workflow_dispatch: # Allow manual trigger
 
@@ -14,7 +14,3 @@ jobs:
       - name: Call Netlify CRON Function
         run: |
           curl -X POST https://evidence.vtuhy.cz/api/cron-fetch-mileage || echo "Request failed"
-        env:
-          # Optional: Add any auth headers if needed
-          # AUTHORIZATION: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-
