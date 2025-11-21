@@ -2,9 +2,9 @@ name: CRON Fetch Mileage
 
 on:
   schedule:
-    # Run daily at 12:32 CET (winter time) = 11:32 UTC
-    # For summer time (CEST), change to: '32 10 * * *'
-    - cron: '32 11 * * *'
+    # Run daily at 12:37 CET (winter time) = 11:37 UTC
+    # For summer time (CEST), change to: '37 10 * * *'
+    - cron: '37 11 * * *'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
