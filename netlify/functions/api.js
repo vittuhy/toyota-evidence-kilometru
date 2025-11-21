@@ -99,8 +99,17 @@ exports.handler = async (event) => {
   }
   try {
     const { path: requestPath, httpMethod, body } = event;
-    const endpoint = requestPath.replace('/.netlify/functions/api', '');
-    console.log('Processing endpoint:', endpoint, 'with method:', httpMethod);
+    // Handle both direct function calls and redirect calls
+    let endpoint = requestPath.replace('/.netlify/functions/api', '');
+    if (endpoint === requestPath) {
+      // If no replacement happened, it's coming from redirect /api/*
+      endpoint = requestPath.replace('/api', '');
+    }
+    // Ensure endpoint starts with /
+    if (!endpoint.startsWith('/')) {
+      endpoint = '/' + endpoint;
+    }
+    console.log('Processing endpoint:', endpoint, 'with method:', httpMethod, 'requestPath:', requestPath);
 
     // Health check
     if (endpoint === '/health' && httpMethod === 'GET') {
