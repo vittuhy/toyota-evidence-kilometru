@@ -1,0 +1,20 @@
+name: CRON Fetch Mileage
+
+on:
+  schedule:
+    # Run daily at 12:30 CET (winter time) = 11:30 UTC
+    # For summer time (CEST), change to: '30 10 * * *'
+    - cron: '30 11 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  fetch-mileage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Netlify CRON Function
+        run: |
+          curl -X POST https://toyota-evidence-kilometru.netlify.app/api/cron-fetch-mileage || echo "Request failed"
+        env:
+          # Optional: Add any auth headers if needed
+          # AUTHORIZATION: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+
