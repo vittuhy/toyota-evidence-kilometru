@@ -3,19 +3,19 @@ export interface MileageRecord {
   date: string;
   totalKm: number;
   createdAt: string;
-  source: 'manual' | 'API'; // Source of the record
+  source: 'manual' | 'API' | 'CRON'; // Source of the record
 }
 
 export interface CreateRecordData {
   date: string;
   totalKm: number;
-  source?: 'manual' | 'API';
+  source?: 'manual' | 'API' | 'CRON';
 }
 
 export interface UpdateRecordData {
   date: string;
   totalKm: number;
-  source?: 'manual' | 'API';
+  source?: 'manual' | 'API' | 'CRON';
 }
 
 class ApiService {
@@ -60,7 +60,8 @@ class ApiService {
         { id: 2, date: '2025-07-31', totalKm: 300, createdAt: '2025-07-31T10:00:00Z', source: 'manual' },
         { id: 3, date: '2025-08-15', totalKm: 750, createdAt: '2025-08-15T10:00:00Z', source: 'manual' },
         { id: 4, date: '2025-09-30', totalKm: 2200, createdAt: '2025-09-30T10:00:00Z', source: 'manual' },
-        { id: 5, date: '2025-10-31', totalKm: 4200, createdAt: '2025-10-31T10:00:00Z', source: 'manual' }
+        { id: 5, date: '2025-10-31', totalKm: 4200, createdAt: '2025-10-31T10:00:00Z', source: 'manual' },
+        { id: 6, date: new Date().toISOString().slice(0, 10), totalKm: 8007, createdAt: new Date().toISOString(), source: 'CRON' }
       ];
     }
     const records = await this.request<MileageRecord[]>('/records');

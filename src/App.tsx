@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Minus, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Calendar, ChevronDown, ChevronRight, BarChart3, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { Plus, Minus, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Calendar, ChevronDown, ChevronRight, BarChart3, RefreshCw, Wifi, WifiOff, Clock } from 'lucide-react';
 import { apiService, MileageRecord } from './api';
 
 interface FormData {
@@ -186,13 +186,24 @@ const RecordHistory: React.FC<RecordHistoryProps> = ({ records, onEdit, onDelete
                             <div>
                               <div className="font-medium flex items-center gap-4">
                                 {record.totalKm.toLocaleString()} km
-                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-tight w-[50px] justify-center ${
-                                  record.source === 'API' 
-                                    ? 'bg-green-900/30 border border-green-700 text-green-300'
-                                    : 'bg-blue-900/30 border border-blue-700 text-blue-300'
-                                }`}>
-                                  {record.source === 'API' ? 'API' : 'MANUAL'}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  {record.source === 'API' || record.source === 'CRON' ? (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium leading-tight bg-green-900/30 border border-green-700 text-green-300">
+                                      <Wifi className="h-2.5 w-2.5" />
+                                      <span>API</span>
+                                    </span>
+                                  ) : null}
+                                  {record.source === 'CRON' ? (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-tight bg-purple-900/30 border border-purple-700 text-purple-300">
+                                      <Clock className="h-2.5 w-2.5" />
+                                    </span>
+                                  ) : null}
+                                  {record.source === 'manual' ? (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-tight w-[50px] justify-center bg-blue-900/30 border border-blue-700 text-blue-300">
+                                      MANUAL
+                                    </span>
+                                  ) : null}
+                                </div>
                               </div>
                               <div className="text-sm text-gray-400 mt-0.5">{formatDate(record.date)}</div>
                             </div>
