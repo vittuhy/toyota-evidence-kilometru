@@ -1,13 +1,7 @@
 // CRON function to fetch mileage daily at 22:00
 // This function is called automatically by Netlify Scheduled Functions
 
-let google;
-try {
-  google = require('googleapis');
-} catch (error) {
-  console.error('Failed to require googleapis:', error);
-  throw error;
-}
+const { google } = require('googleapis');
 
 const SHEET_ID = '1QvIQpN0Yr4dee1aNf3_ubwyWpWCIULfRWOOAqWAmywM';
 const SHEET_NAME = 'Sheet1';
