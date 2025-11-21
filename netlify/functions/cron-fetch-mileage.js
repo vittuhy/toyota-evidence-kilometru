@@ -310,8 +310,30 @@ async function appendRow(record) {
   });
 }
 
+async function updateRow(id, newData) {
+  const rows = await getRows();
+  const rowIndex = rows.findIndex(r => r.id === id);
+  if (rowIndex === -1) return false;
+  
+  const rowNumber = rowIndex + 2; // +2 because of header and 0-index
+  const sheets = getDoc();
+  // Use provided source or default to CRON for CRON updates
+  const source = newData.source !== undefined ? newData.source : 'CRON';
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `${SHEET_NAME}!A${rowNumber}:E${rowNumber}`,
+    valueInputOption: 'RAW',
+    requestBody: {
+      values: [[id, newData.date, newData.totalKm, newData.createdAt, source]]
+    },
+  });
+  return true;
+}
+
 // Schedule: Run daily at 11:25 UTC (12:25 CET - zimní čas)
-exports.schedule = "25 11 * * *";
+exports.config = {
+  schedule: "25 11 * * *"
+};
 
 exports.handler = async (event, context) => {
   console.log('CRON fetch mileage function called at:', new Date().toISOString());
@@ -341,9 +363,20 @@ exports.handler = async (event, context) => {
     const todayRecord = rows.find(r => r.date === today);
     
     if (todayRecord) {
-      // If same date, same mileage, do nothing
+      // If same date, same mileage - update source to CRON if not already CRON
       if (todayRecord.totalKm === fetchedMileage) {
-        console.log(`Today's record already exists with same mileage: ${fetchedMileage} km`);
+        if (todayRecord.source !== 'CRON') {
+          // Update source to CRON to mark it as fetched by CRON
+          await updateRow(todayRecord.id, {
+            date: todayRecord.date,
+            totalKm: todayRecord.totalKm,
+            createdAt: todayRecord.createdAt,
+            source: 'CRON'
+          });
+          console.log(`Updated source to CRON for today's record: ${fetchedMileage} km`);
+        } else {
+          console.log(`Today's record already exists with same mileage and CRON source: ${fetchedMileage} km`);
+        }
         return {
           statusCode: 200,
           body: JSON.stringify({ 
@@ -353,18 +386,14 @@ exports.handler = async (event, context) => {
           }),
         };
       } else {
-        // Same date, different mileage - update existing record
-        // Note: We'll create a new record instead of updating to preserve history
-        // But mark it as CRON source
-        const newRecord = {
-          id: Date.now(),
+        // Same date, different mileage - update existing record (no duplicate!)
+        await updateRow(todayRecord.id, {
           date: today,
           totalKm: fetchedMileage,
           createdAt: new Date().toISOString(),
           source: 'CRON'
-        };
-        await appendRow(newRecord);
-        console.log(`Updated record for today: ${fetchedMileage} km`);
+        });
+        console.log(`Updated existing record for today: ${fetchedMileage} km`);
         return {
           statusCode: 200,
           body: JSON.stringify({ 
