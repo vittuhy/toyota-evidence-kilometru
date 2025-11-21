@@ -16,16 +16,16 @@ async function getRows() {
   const sheets = getDoc();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!A2:E`, // Updated to include source column
+    range: `${SHEET_NAME}!A2:D`,
   });
   
   const rows = response.data.values || [];
-  return rows.map(([id, date, totalKm, createdAt, source]) => ({
+  return rows.map(([id, date, totalKm, createdAt]) => ({
     id: Number(id),
     date,
     totalKm: Number(totalKm),
     createdAt,
-    source: source || 'manual', // Default to 'manual' for backward compatibility
+    source: 'manual', // Default to 'manual' for backward compatibility
   }));
 }
 
@@ -33,11 +33,11 @@ async function appendRow(record) {
   const sheets = getDoc();
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!A:E`, // Updated to include source column
+    range: `${SHEET_NAME}!A:D`,
     valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
     requestBody: {
-      values: [[record.id, record.date, record.totalKm, record.createdAt, record.source || 'manual']]
+      values: [[record.id, record.date, record.totalKm, record.createdAt]]
     },
   });
 }
@@ -51,10 +51,10 @@ async function updateRow(id, newData) {
   const sheets = getDoc();
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!A${rowNumber}:E${rowNumber}`, // Updated to include source column
+    range: `${SHEET_NAME}!A${rowNumber}:D${rowNumber}`,
     valueInputOption: 'RAW',
     requestBody: {
-      values: [[id, newData.date, newData.totalKm, newData.createdAt, newData.source || 'manual']]
+      values: [[id, newData.date, newData.totalKm, newData.createdAt]]
     },
   });
   return true;
