@@ -5,10 +5,6 @@
 [[plugins]]
   package = "@netlify/plugin-functions-install-core"
 
-# Scheduled function configuration
-[functions."cron-fetch-mileage"]
-  schedule = "30 11 * * *"
-
 [[redirects]]
   from = "/api/fetch-mileage"
   to = "/.netlify/functions/fetch-mileage"

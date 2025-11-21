@@ -345,10 +345,8 @@ async function updateRow(id, newData) {
   return true;
 }
 
-// Schedule: Run daily at 11:30 UTC (12:30 CET - zimní čas)
-exports.config = {
-  schedule: "30 11 * * *"
-};
+// This function is called by external CRON service (cron-job.org)
+// Not using Netlify Scheduled Functions (requires Pro plan)
 
 exports.handler = async (event, context) => {
   console.log('CRON fetch mileage function called at:', new Date().toISOString());
