@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Minus, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Calendar, ChevronDown, ChevronRight, BarChart3, RefreshCw, Wifi, WifiOff, LogOut } from 'lucide-react';
+import { Plus, Minus, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Calendar, ChevronDown, ChevronRight, BarChart3, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { apiService, MileageRecord } from './api';
 
 interface FormData {
@@ -541,11 +541,6 @@ const KilometersTracker: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    localStorage.removeItem('isLoggedIn');
-    setLoginPassword('');
-  };
 
   // Načtení dat při spuštění
   useEffect(() => {
