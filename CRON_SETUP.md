@@ -1,6 +1,15 @@
 # Nastavení externího CRONu pro Netlify Free Plan
 
-Protože Netlify Scheduled Functions vyžadují Pro plán a GitHub Actions mají zpoždění, použijeme externí CRON službu pro přesnější časování.
+Protože Netlify Scheduled Functions vyžadují Pro plán, použijeme externí CRON službu pro automatické spouštění.
+
+## URL endpointu pro CRON:
+
+```
+https://evidence.vtuhy.cz/api/cron-fetch-mileage
+```
+
+**Metoda:** POST  
+**Bez autentizace** - funkce běží na serveru
 
 ## Doporučená služba: cron-job.org
 
@@ -10,51 +19,35 @@ Protože Netlify Scheduled Functions vyžadují Pro plán a GitHub Actions mají
    - **Title:** Toyota Mileage Fetch
    - **Address:** `https://evidence.vtuhy.cz/api/cron-fetch-mileage`
    - **Schedule:** 
-     - Pro zimní čas (CET): `48 12 * * *` (každý den v 12:48)
+     - Pro zimní čas (CET): `48 12 * * *` (každý den v 12:48 CET)
      - Pro letní čas (CEST): `48 10 * * *` (každý den v 12:48 CEST = 10:48 UTC)
+     - Nebo použijte Timezone: **Europe/Prague** (automaticky se přizpůsobí letnímu/zimnímu času)
    - **Request method:** POST
-   - **Timezone:** Europe/Prague (automaticky se přizpůsobí letnímu/zimnímu času)
    - **Save**
 
 3. **Testování:**
    - Můžete kliknout na "Run now" pro okamžité testování
    - Zkontrolujte logy v Netlify Dashboard → Functions → cron-fetch-mileage → Logs
-
-## Alternativa: GitHub Actions (má zpoždění 3-10 minut)
-
-GitHub Actions scheduled workflows mohou mít zpoždění až 10 minut nebo více, zejména při vysokém zatížení. Pro přesnější časování použijte externí CRON službu.
+   - Zkontrolujte aplikaci - měl by se objevit nový záznam s labely "API" a ikonkou hodinek
 
 ## Alternativní služby:
 
 - **EasyCron** (https://www.easycron.com) - bezplatný plán s limitem
-- **GitHub Actions** - pokud máte repozitář na GitHubu, můžete použít GitHub Actions s schedule
 - **UptimeRobot** - má také CRON funkce
-
-## GitHub Actions řešení (pokud máte GitHub repo):
-
-Vytvořte soubor `.github/workflows/cron-fetch-mileage.yml`:
-
-```yaml
-name: CRON Fetch Mileage
-
-on:
-  schedule:
-    - cron: '30 11 * * *'  # 12:30 CET (zimní čas)
-  workflow_dispatch:  # Pro manuální spuštění
-
-jobs:
-  fetch-mileage:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Call Netlify Function
-        run: |
-          curl -X POST https://your-site.netlify.app/api/cron-fetch-mileage
-```
+- **cron-job.org** - doporučeno, bezplatné a spolehlivé
 
 ## Poznámka o časových pásmech:
 
-- **Zimní čas (CET):** UTC+1 → 12:30 CET = 11:30 UTC
-- **Letní čas (CEST):** UTC+2 → 12:30 CEST = 10:30 UTC
+- **Zimní čas (CET):** UTC+1 → 12:48 CET = 11:48 UTC
+- **Letní čas (CEST):** UTC+2 → 12:48 CEST = 10:48 UTC
 
-Nezapomeňte změnit čas při přechodu na letní/zimní čas!
+Pokud použijete Timezone: Europe/Prague, služba automaticky přepne mezi letním a zimním časem.
+
+## Co CRON dělá:
+
+1. Zavolá Toyota API a získá aktuální stav tachometru
+2. Zkontroluje, zda už existuje záznam pro dnešní den
+3. Pokud existuje stejná hodnota → přeskočí (nebo aktualizuje source na CRON)
+4. Pokud existuje jiná hodnota → aktualizuje záznam
+5. Pokud neexistuje → vytvoří nový záznam s source: 'CRON'
 
