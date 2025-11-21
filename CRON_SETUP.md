@@ -1,6 +1,6 @@
 # Nastavení externího CRONu pro Netlify Free Plan
 
-Protože Netlify Scheduled Functions vyžadují Pro plán, použijeme externí CRON službu.
+Protože Netlify Scheduled Functions vyžadují Pro plán a GitHub Actions mají zpoždění, použijeme externí CRON službu pro přesnější časování.
 
 ## Doporučená služba: cron-job.org
 
@@ -8,16 +8,21 @@ Protože Netlify Scheduled Functions vyžadují Pro plán, použijeme externí C
 
 2. **Vytvořte nový CRON job:**
    - **Title:** Toyota Mileage Fetch
-   - **Address:** `https://your-site.netlify.app/api/cron-fetch-mileage`
+   - **Address:** `https://evidence.vtuhy.cz/api/cron-fetch-mileage`
    - **Schedule:** 
-     - Pro zimní čas (CET): `30 12 * * *` (každý den v 12:30)
-     - Pro letní čas (CEST): `30 10 * * *` (každý den v 12:30 CEST = 10:30 UTC)
-   - **Request method:** POST nebo GET
+     - Pro zimní čas (CET): `48 12 * * *` (každý den v 12:48)
+     - Pro letní čas (CEST): `48 10 * * *` (každý den v 12:48 CEST = 10:48 UTC)
+   - **Request method:** POST
+   - **Timezone:** Europe/Prague (automaticky se přizpůsobí letnímu/zimnímu času)
    - **Save**
 
 3. **Testování:**
    - Můžete kliknout na "Run now" pro okamžité testování
    - Zkontrolujte logy v Netlify Dashboard → Functions → cron-fetch-mileage → Logs
+
+## Alternativa: GitHub Actions (má zpoždění 3-10 minut)
+
+GitHub Actions scheduled workflows mohou mít zpoždění až 10 minut nebo více, zejména při vysokém zatížení. Pro přesnější časování použijte externí CRON službu.
 
 ## Alternativní služby:
 
