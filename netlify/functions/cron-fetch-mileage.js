@@ -337,6 +337,18 @@ exports.config = {
 
 exports.handler = async (event, context) => {
   console.log('CRON fetch mileage function called at:', new Date().toISOString());
+  console.log('Event:', JSON.stringify(event, null, 2));
+  
+  // Handle CORS for HTTP requests
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  };
+  
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: corsHeaders, body: '' };
+  }
   
   try {
     // Fetch mileage from Toyota API
@@ -346,6 +358,7 @@ exports.handler = async (event, context) => {
       console.error('Failed to fetch mileage:', mileageData.error);
       return {
         statusCode: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
         body: JSON.stringify({ 
           success: false,
           error: mileageData.error || 'Failed to fetch mileage'
@@ -379,6 +392,7 @@ exports.handler = async (event, context) => {
         }
         return {
           statusCode: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
           body: JSON.stringify({ 
             success: true,
             message: `Today's record already exists with same mileage: ${fetchedMileage} km`,
@@ -396,6 +410,7 @@ exports.handler = async (event, context) => {
         console.log(`Updated existing record for today: ${fetchedMileage} km`);
         return {
           statusCode: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
           body: JSON.stringify({ 
             success: true,
             message: `Updated record for today: ${fetchedMileage} km`,
@@ -416,6 +431,7 @@ exports.handler = async (event, context) => {
       console.log(`Created new record for today: ${fetchedMileage} km`);
       return {
         statusCode: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
         body: JSON.stringify({ 
           success: true,
           message: `Created new record for today: ${fetchedMileage} km`,
@@ -427,6 +443,7 @@ exports.handler = async (event, context) => {
     console.error('CRON function error:', error);
     return {
       statusCode: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
       body: JSON.stringify({ 
         success: false,
         error: 'Internal server error',
