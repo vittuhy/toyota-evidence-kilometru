@@ -366,8 +366,6 @@ exports.handler = async (event, context) => {
   
   // Wrap everything in try-catch to ensure we always return proper response
   try {
-  
-  try {
     console.log('Starting CRON fetch mileage process...');
     
     // Check environment variables
