@@ -8,6 +8,9 @@ on:
     # Run daily at 13:00 CET (winter time) = 12:00 UTC (test)
     # For summer time (CEST), change to: '0 11 * * *'
     - cron: '0 12 * * *'
+    # Run daily at 13:05 CET (winter time) = 12:05 UTC (test)
+    # For summer time (CEST), change to: '5 11 * * *'
+    - cron: '5 12 * * *'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
