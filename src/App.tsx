@@ -931,11 +931,12 @@ const KilometersTracker: React.FC = () => {
               <button
                 onClick={handleFetchFromAPI}
                 disabled={isFetchingMileage}
-                className={`p-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
                   isFetchingMileage
                     ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                     : 'bg-green-600 hover:bg-green-700 text-white shadow-lg'
                 }`}
+                style={{ height: '2.5rem' }}
                 title="Načíst z Toyota API"
               >
                 {isFetchingMileage ? (
