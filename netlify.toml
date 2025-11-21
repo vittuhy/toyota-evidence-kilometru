@@ -5,6 +5,10 @@
 [[plugins]]
   package = "@netlify/plugin-functions-install-core"
 
+# CRON function timeout configuration (max 10s for Free plan)
+[functions."cron-fetch-mileage"]
+  timeout = 10
+
 [[redirects]]
   from = "/api/fetch-mileage"
   to = "/.netlify/functions/fetch-mileage"

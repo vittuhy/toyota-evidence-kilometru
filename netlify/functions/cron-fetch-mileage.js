@@ -79,13 +79,13 @@ async function fetchToyotaMileage() {
         }
       }
       
-      const authResponse = await fetch(authUrl, {
+      const authResponse = await fetchWithTimeout(authUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(authData),
-      });
+      }, 5000);
       
       if (!authResponse.ok) {
         throw new Error(`Authentication failed: ${authResponse.status} ${authResponse.statusText}`);
@@ -115,7 +115,7 @@ async function fetchToyotaMileage() {
     // Step 2: Authorization
     const authorizeUrl = 'https://b2c-login.toyota-europe.com/oauth2/realms/root/realms/tme/authorize?client_id=oneapp&scope=openid+profile+write&response_type=code&redirect_uri=com.toyota.oneapp:/oauth2Callback&code_challenge=plain&code_challenge_method=plain';
     
-    const authzResponse = await fetch(authorizeUrl, {
+    const authzResponse = await fetchWithTimeout(authorizeUrl, {
       method: 'GET',
       headers: {
         'Cookie': `iPlanetDirectoryPro=${tokenId}`,
@@ -140,7 +140,7 @@ async function fetchToyotaMileage() {
     
     // Step 3: Get access token
     const tokenUrl = 'https://b2c-login.toyota-europe.com/oauth2/realms/root/realms/tme/access_token';
-    const tokenResponse = await fetch(tokenUrl, {
+    const tokenResponse = await fetchWithTimeout(tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -186,7 +186,7 @@ async function fetchToyotaMileage() {
     const clientRef = generateHmacSha256(CLIENT_VERSION, userGuid);
     const correlationId = randomUUID();
     
-    const guidResponse = await fetch(guidUrl, {
+    const guidResponse = await fetchWithTimeout(guidUrl, {
       method: 'GET',
       headers: {
         'x-api-key': 'tTZipv6liF74PwMfk9Ed68AQ0bISswwf3iHQdqcF',
@@ -220,7 +220,7 @@ async function fetchToyotaMileage() {
     // Step 5: Get telemetry (mileage)
     const telemetryCorrelationId = randomUUID();
     const telemetryUrl = 'https://ctpa-oneapi.tceu-ctp-prd.toyotaconnectedeurope.io/v3/telemetry';
-    const telemetryResponse = await fetch(telemetryUrl, {
+    const telemetryResponse = await fetchWithTimeout(telemetryUrl, {
       method: 'GET',
       headers: {
         'x-api-key': 'tTZipv6liF74PwMfk9Ed68AQ0bISswwf3iHQdqcF',
