@@ -285,15 +285,16 @@ async function getRows() {
   const sheets = getDoc();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!A2:D`,
+    range: `${SHEET_NAME}!A2:E`,
   });
   
   const rows = response.data.values || [];
-  return rows.map(([id, date, totalKm, createdAt]) => ({
+  return rows.map(([id, date, totalKm, createdAt, source]) => ({
     id: Number(id),
     date,
     totalKm: Number(totalKm),
     createdAt,
+    source: source || 'manual', // Default to 'manual' if source is missing
   }));
 }
 
@@ -370,10 +371,18 @@ exports.handler = async (event, context) => {
     const fetchedMileage = mileageData.mileage;
     
     // Get existing records
-    const rows = await getRows();
+    let rows;
+    try {
+      rows = await getRows();
+      console.log(`Found ${rows.length} existing records`);
+    } catch (error) {
+      console.error('Error getting rows from Google Sheets:', error);
+      throw new Error(`Failed to read Google Sheets: ${error.message}`);
+    }
     
     // Check if record for today already exists
     const todayRecord = rows.find(r => r.date === today);
+    console.log(`Today's record:`, todayRecord ? `Found (${todayRecord.totalKm} km, source: ${todayRecord.source})` : 'Not found');
     
     if (todayRecord) {
       // If same date, same mileage - update source to CRON if not already CRON
@@ -441,13 +450,16 @@ exports.handler = async (event, context) => {
     }
   } catch (error) {
     console.error('CRON function error:', error);
+    console.error('Error stack:', error.stack);
+    // Even on error, return proper JSON response
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
       body: JSON.stringify({ 
         success: false,
         error: 'Internal server error',
-        message: error.message
+        message: error.message || 'Unknown error',
+        stack: process.env.NETLIFY_DEV ? error.stack : undefined // Only include stack in dev
       }),
     };
   }
