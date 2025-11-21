@@ -144,7 +144,8 @@ class ApiService {
         };
       }
     }
-    const url = `${this.API_BASE_URL}/fetch-mileage`;
+    // In production, use the redirect path from netlify.toml
+    const url = '/api/fetch-mileage';
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -154,7 +155,10 @@ class ApiService {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      return {
+        success: false,
+        error: errorData.error || `HTTP ${response.status}`
+      };
     }
 
     return response.json();
