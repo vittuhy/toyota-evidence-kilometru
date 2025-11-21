@@ -797,7 +797,7 @@ const KilometersTracker: React.FC = () => {
             // Same date + same value = don't save
             setFetchStatus({ 
               type: 'success', 
-              message: `Dnešní hodnota ${fetchedMileage.toLocaleString()} km již existuje` 
+              message: `Dnešní hodnota ${fetchedMileage.toLocaleString('cs-CZ')} km již existuje` 
             });
           } else {
             // Same date + different value = update existing record
@@ -809,7 +809,7 @@ const KilometersTracker: React.FC = () => {
             setRecords(records.map(r => r.id === todayRecord.id ? updatedRecord : r));
             setFetchStatus({ 
               type: 'success', 
-              message: `Aktualizováno: ${fetchedMileage.toLocaleString()} km${result.vehicle ? ` z ${result.vehicle}` : ''}` 
+              message: `Přidáno: ${fetchedMileage.toLocaleString('cs-CZ')} km${result.vehicle ? ` z ${result.vehicle}` : ''}` 
             });
           }
         } else {
@@ -825,7 +825,7 @@ const KilometersTracker: React.FC = () => {
             setRecords([...records, newRecord]);
             setFetchStatus({ 
               type: 'success', 
-              message: `Přidáno: ${fetchedMileage.toLocaleString()} km${result.vehicle ? ` z ${result.vehicle}` : ''}` 
+              message: `Přidáno: ${fetchedMileage.toLocaleString('cs-CZ')} km${result.vehicle ? ` z ${result.vehicle}` : ''}` 
             });
           } else if (!lastRecord || lastRecord.totalKm !== fetchedMileage) {
             // Different value or no previous records = create new record
@@ -837,7 +837,7 @@ const KilometersTracker: React.FC = () => {
             setRecords([...records, newRecord]);
             setFetchStatus({ 
               type: 'success', 
-              message: `Přidáno: ${fetchedMileage.toLocaleString()} km${result.vehicle ? ` z ${result.vehicle}` : ''}` 
+              message: `Přidáno: ${fetchedMileage.toLocaleString('cs-CZ')} km${result.vehicle ? ` z ${result.vehicle}` : ''}` 
             });
           }
         }
