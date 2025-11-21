@@ -6,13 +6,13 @@
   package = "@netlify/plugin-functions-install-core"
 
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
+  from = "/api/fetch-mileage"
+  to = "/.netlify/functions/fetch-mileage"
   status = 200
 
 [[redirects]]
-  from = "/api/fetch-mileage"
-  to = "/.netlify/functions/fetch-mileage"
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
   status = 200
 
 [[redirects]]
