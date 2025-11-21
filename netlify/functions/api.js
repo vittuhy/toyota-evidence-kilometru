@@ -16,15 +16,16 @@ async function getRows() {
   const sheets = getDoc();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!A2:D`,
+    range: `${SHEET_NAME}!A2:E`, // Updated to include source column
   });
   
   const rows = response.data.values || [];
-  return rows.map(([id, date, totalKm, createdAt]) => ({
+  return rows.map(([id, date, totalKm, createdAt, source]) => ({
     id: Number(id),
     date,
     totalKm: Number(totalKm),
     createdAt,
+    source: source || 'manual', // Default to 'manual' for backward compatibility
   }));
 }
 
@@ -32,11 +33,11 @@ async function appendRow(record) {
   const sheets = getDoc();
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!A:D`,
+    range: `${SHEET_NAME}!A:E`, // Updated to include source column
     valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
     requestBody: {
-      values: [[record.id, record.date, record.totalKm, record.createdAt]]
+      values: [[record.id, record.date, record.totalKm, record.createdAt, record.source || 'manual']]
     },
   });
 }
@@ -50,10 +51,10 @@ async function updateRow(id, newData) {
   const sheets = getDoc();
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!A${rowNumber}:D${rowNumber}`,
+    range: `${SHEET_NAME}!A${rowNumber}:E${rowNumber}`, // Updated to include source column
     valueInputOption: 'RAW',
     requestBody: {
-      values: [[id, newData.date, newData.totalKm, newData.createdAt]]
+      values: [[id, newData.date, newData.totalKm, newData.createdAt, newData.source || 'manual']]
     },
   });
   return true;
@@ -122,7 +123,7 @@ exports.handler = async (event) => {
 
     // POST create record
     if (endpoint === '/records' && httpMethod === 'POST') {
-      const { date, totalKm } = JSON.parse(body);
+      const { date, totalKm, source } = JSON.parse(body);
       if (!date || !totalKm) {
         return {
           statusCode: 400,
@@ -135,6 +136,7 @@ exports.handler = async (event) => {
         date,
         totalKm: Number(totalKm),
         createdAt: new Date().toISOString(),
+        source: source || 'manual', // Default to 'manual' if not provided
       };
       await appendRow(newRecord);
       return {
@@ -148,7 +150,7 @@ exports.handler = async (event) => {
     const putMatch = endpoint.match(/^\/records\/(\d+)$/);
     if (putMatch && httpMethod === 'PUT') {
       const id = Number(putMatch[1]);
-      const { date, totalKm } = JSON.parse(body);
+      const { date, totalKm, source } = JSON.parse(body);
       if (!date || !totalKm) {
         return {
           statusCode: 400,
@@ -156,10 +158,13 @@ exports.handler = async (event) => {
           body: JSON.stringify({ error: 'Date and totalKm are required' }),
         };
       }
+      const row = await getRows();
+      const existingRecord = row.find(r => r.id === id);
       const updated = await updateRow(id, {
         date,
         totalKm: Number(totalKm),
         createdAt: new Date().toISOString(),
+        source: source || existingRecord?.source || 'manual', // Preserve existing source if not provided
       });
       if (!updated) {
         return {
@@ -171,7 +176,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        body: JSON.stringify({ id, date, totalKm: Number(totalKm), createdAt: new Date().toISOString() }),
+        body: JSON.stringify({ id, date, totalKm: Number(totalKm), createdAt: new Date().toISOString(), source: source || existingRecord?.source || 'manual' }),
       };
     }
 

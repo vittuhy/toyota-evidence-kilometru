@@ -3,16 +3,19 @@ export interface MileageRecord {
   date: string;
   totalKm: number;
   createdAt: string;
+  source: 'manual' | 'API'; // Source of the record
 }
 
 export interface CreateRecordData {
   date: string;
   totalKm: number;
+  source?: 'manual' | 'API';
 }
 
 export interface UpdateRecordData {
   date: string;
   totalKm: number;
+  source?: 'manual' | 'API';
 }
 
 class ApiService {
@@ -53,14 +56,19 @@ class ApiService {
     if (this.isLocalhost) {
       // Always return demo data for local development
       return [
-        { id: 1, date: '2025-07-11', totalKm: 100, createdAt: '2025-07-11T10:00:00Z' },
-        { id: 2, date: '2025-07-31', totalKm: 300, createdAt: '2025-07-31T10:00:00Z' },
-        { id: 3, date: '2025-08-15', totalKm: 750, createdAt: '2025-08-15T10:00:00Z' },
-        { id: 4, date: '2025-09-30', totalKm: 2200, createdAt: '2025-09-30T10:00:00Z' },
-        { id: 5, date: '2025-10-31', totalKm: 4200, createdAt: '2025-10-31T10:00:00Z' }
+        { id: 1, date: '2025-07-11', totalKm: 100, createdAt: '2025-07-11T10:00:00Z', source: 'manual' },
+        { id: 2, date: '2025-07-31', totalKm: 300, createdAt: '2025-07-31T10:00:00Z', source: 'manual' },
+        { id: 3, date: '2025-08-15', totalKm: 750, createdAt: '2025-08-15T10:00:00Z', source: 'manual' },
+        { id: 4, date: '2025-09-30', totalKm: 2200, createdAt: '2025-09-30T10:00:00Z', source: 'manual' },
+        { id: 5, date: '2025-10-31', totalKm: 4200, createdAt: '2025-10-31T10:00:00Z', source: 'manual' }
       ];
     }
-    return this.request<MileageRecord[]>('/records');
+    const records = await this.request<MileageRecord[]>('/records');
+    // Ensure all records have source set to 'manual' if missing
+    return records.map(record => ({
+      ...record,
+      source: record.source || 'manual'
+    }));
   }
 
   // Create new record
@@ -73,6 +81,7 @@ class ApiService {
         date: data.date,
         totalKm: data.totalKm,
         createdAt: new Date().toISOString(),
+        source: data.source || 'manual',
       };
       const updatedRecords = [...records, newRecord];
       localStorage.setItem('mileageRecords', JSON.stringify(updatedRecords));
@@ -91,7 +100,7 @@ class ApiService {
       const records = savedRecords ? JSON.parse(savedRecords) : [];
       const updatedRecords = records.map((record: MileageRecord) => 
         record.id === id 
-          ? { ...record, date: data.date, totalKm: data.totalKm, createdAt: new Date().toISOString() }
+          ? { ...record, date: data.date, totalKm: data.totalKm, createdAt: new Date().toISOString(), source: data.source || record.source || 'manual' }
           : record
       );
       localStorage.setItem('mileageRecords', JSON.stringify(updatedRecords));
@@ -101,6 +110,54 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify(data),
     });
+  }
+
+  // Fetch mileage from Toyota API
+  async fetchMileageFromAPI(): Promise<{ success: boolean; mileage?: number; error?: string; vehicle?: string }> {
+    if (this.isLocalhost) {
+      // For localhost, try to call the actual API endpoint
+      // This will work if you run 'netlify dev' or have the function running locally
+      try {
+        const response = await fetch('http://localhost:8888/.netlify/functions/fetch-mileage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          return await response.json();
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          return {
+            success: false,
+            error: errorData.error || `HTTP ${response.status}`
+          };
+        }
+      } catch (error) {
+        // Fallback to mock data if function not available
+        console.warn('Local API function not available, using mock data:', error);
+        return {
+          success: true,
+          mileage: 8007,
+          vehicle: '2023 Toyota Corolla HB/TS - MC \'23'
+        };
+      }
+    }
+    const url = `${this.API_BASE_URL}/fetch-mileage`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
   }
 
   // Delete record

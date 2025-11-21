@@ -11,6 +11,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/fetch-mileage"
+  to = "/.netlify/functions/fetch-mileage"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200 

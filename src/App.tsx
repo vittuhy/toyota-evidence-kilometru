@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Minus, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Calendar, ChevronDown, ChevronRight, BarChart3 } from 'lucide-react';
+import { Plus, Minus, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Calendar, ChevronDown, ChevronRight, BarChart3, RefreshCw, Wifi, WifiOff, LogOut } from 'lucide-react';
 import { apiService, MileageRecord } from './api';
 
 interface FormData {
@@ -48,7 +48,8 @@ function getMonthLabelShort(date: Date) {
   return date.toLocaleString('cs-CZ', { month: '2-digit', year: '2-digit' }).replace('. ', '/');
 }
 
-const LOGIN_PASSWORD = process.env.REACT_APP_LOGIN_PASSWORD;
+// Login password - use environment variable or default for local development
+const LOGIN_PASSWORD = process.env.REACT_APP_LOGIN_PASSWORD || 'test123';
 
 // New RecordHistory component
 interface RecordHistoryProps {
@@ -173,11 +174,22 @@ const RecordHistory: React.FC<RecordHistoryProps> = ({ records, onEdit, onDelete
                           key={record.id}
                           className="flex items-center justify-between p-3 bg-gray-700 rounded-lg hover:bg-gray-650 transition-colors"
                         >
-                          <div>
-                            <div className="font-medium">{record.totalKm.toLocaleString()} km</div>
-                            <div className="text-sm text-gray-400">{formatDate(record.date)}</div>
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <div className="font-medium flex items-center gap-4">
+                                {record.totalKm.toLocaleString()} km
+                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-tight w-[50px] justify-center ${
+                                  record.source === 'API' 
+                                    ? 'bg-green-900/30 border border-green-700 text-green-300'
+                                    : 'bg-blue-900/30 border border-blue-700 text-blue-300'
+                                }`}>
+                                  {record.source === 'API' ? 'API' : 'MANUAL'}
+                                </span>
+                              </div>
+                              <div className="text-sm text-gray-400 mt-0.5">{formatDate(record.date)}</div>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex items-center gap-2">
                             <button
                               onClick={() => onEdit(record)}
                               className="p-2 text-blue-400 hover:bg-gray-600 rounded-lg transition-colors"
@@ -500,6 +512,8 @@ const KilometersTracker: React.FC = () => {
   const [loginError, setLoginError] = useState<string>('');
   const mileageInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
+  const [isFetchingMileage, setIsFetchingMileage] = useState<boolean>(false);
+  const [fetchStatus, setFetchStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
 
   // Konstanty pro leasing
   const LEASE_START = '2025-07-08';
@@ -707,17 +721,19 @@ const KilometersTracker: React.FC = () => {
 
     try {
       if (editingRecord) {
-        // Update existing record
+        // Update existing record (preserve source)
         const updatedRecord = await apiService.updateRecord(editingRecord.id, {
           date: formData.date,
-          totalKm: parseInt(formData.totalKm)
+          totalKm: parseInt(formData.totalKm),
+          source: editingRecord.source || 'manual'
         });
         setRecords(records.map(r => r.id === editingRecord.id ? updatedRecord : r));
       } else {
-        // Create new record
+        // Create new record - always manual when entered manually
         const newRecord = await apiService.createRecord({
           date: formData.date,
-          totalKm: parseInt(formData.totalKm)
+          totalKm: parseInt(formData.totalKm),
+          source: 'manual'
         });
         setRecords([...records, newRecord]);
       }
@@ -728,6 +744,96 @@ const KilometersTracker: React.FC = () => {
     } catch (error) {
       console.error('Error saving record:', error);
       alert('Chyba při ukládání záznamu. Zkuste to znovu.');
+    }
+  };
+
+  const handleFetchFromAPI = async (): Promise<void> => {
+    setIsFetchingMileage(true);
+    setFetchStatus({ type: null, message: '' });
+    
+    try {
+      const result = await apiService.fetchMileageFromAPI();
+      
+      if (result.success && result.mileage !== undefined) {
+        const today = new Date().toISOString().slice(0, 10);
+        const fetchedMileage = result.mileage;
+        
+        // Find existing record for today
+        const todayRecord = records.find(r => r.date === today);
+        
+        // Find last record (most recent)
+        const sortedRecords = [...records].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const lastRecord = sortedRecords[0];
+        
+        if (todayRecord) {
+          // Record for today exists
+          if (todayRecord.totalKm === fetchedMileage) {
+            // Same date + same value = don't save
+            setFetchStatus({ 
+              type: 'success', 
+              message: `Dnešní hodnota ${fetchedMileage.toLocaleString()} km již existuje` 
+            });
+          } else {
+            // Same date + different value = update existing record
+            const updatedRecord = await apiService.updateRecord(todayRecord.id, {
+              date: today,
+              totalKm: fetchedMileage,
+              source: 'API'
+            });
+            setRecords(records.map(r => r.id === todayRecord.id ? updatedRecord : r));
+            setFetchStatus({ 
+              type: 'success', 
+              message: `Aktualizováno: ${fetchedMileage.toLocaleString()} km${result.vehicle ? ` z ${result.vehicle}` : ''}` 
+            });
+          }
+        } else {
+          // No record for today
+          // Check if same value as last record
+          if (lastRecord && lastRecord.totalKm === fetchedMileage && lastRecord.date !== today) {
+            // Same value as last record, but different day = create new record for today
+            const newRecord = await apiService.createRecord({
+              date: today,
+              totalKm: fetchedMileage,
+              source: 'API'
+            });
+            setRecords([...records, newRecord]);
+            setFetchStatus({ 
+              type: 'success', 
+              message: `Přidáno: ${fetchedMileage.toLocaleString()} km${result.vehicle ? ` z ${result.vehicle}` : ''}` 
+            });
+          } else if (!lastRecord || lastRecord.totalKm !== fetchedMileage) {
+            // Different value or no previous records = create new record
+            const newRecord = await apiService.createRecord({
+              date: today,
+              totalKm: fetchedMileage,
+              source: 'API'
+            });
+            setRecords([...records, newRecord]);
+            setFetchStatus({ 
+              type: 'success', 
+              message: `Přidáno: ${fetchedMileage.toLocaleString()} km${result.vehicle ? ` z ${result.vehicle}` : ''}` 
+            });
+          }
+        }
+        
+        // Auto-hide success message after 5 seconds
+        setTimeout(() => {
+          setFetchStatus({ type: null, message: '' });
+        }, 5000);
+      } else {
+        setFetchStatus({ 
+          type: 'error', 
+          message: result.error || 'Nepodařilo se načíst data z API' 
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching mileage:', error);
+      setFetchStatus({ 
+        type: 'error', 
+        message: 'Chyba při načítání dat z API' 
+      });
+    } finally {
+      setIsFetchingMileage(false);
     }
   };
 
@@ -795,20 +901,79 @@ const KilometersTracker: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* Odhlásit - ikona (vlevo) - skrytá při načítání */}
+              {!isFetchingMileage && (
+                <button
+                  onClick={handleLogout}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Odhlásit"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              )}
+              
+              {/* Manuální přidání - ikona (uprostřed, méně výrazná) - skrytá při načítání */}
+              {!isFetchingMileage && (
+                <button
+                  onClick={() => setShowAddForm(!showAddForm)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    showAddForm 
+                      ? 'text-red-400 hover:text-red-300 hover:bg-gray-700' 
+                      : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700'
+                  }`}
+                  title={showAddForm ? 'Zavřít formulář' : 'Přidat záznam ručně'}
+                >
+                  {showAddForm ? <Minus className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+                </button>
+              )}
+              
+              {/* API Fetch - ikona (vpravo, výrazná - hlavní funkce) */}
               <button
-                onClick={handleLogout}
-                className="ml-4 bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded-lg text-sm text-white border border-gray-600"
-              >Odhlásit</button>
-              <button
-                onClick={() => setShowAddForm(!showAddForm)}
-                className="bg-blue-600 hover:bg-blue-700 p-2 rounded-full transition-colors"
+                onClick={handleFetchFromAPI}
+                disabled={isFetchingMileage}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                  isFetchingMileage
+                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700 text-white shadow-lg'
+                }`}
+                title="Načíst z Toyota API"
               >
-                {showAddForm ? <Minus className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+                {isFetchingMileage ? (
+                  <>
+                    <RefreshCw className="h-5 w-5 animate-spin" />
+                    <span className="text-sm">Načítání...</span>
+                  </>
+                ) : (
+                  <>
+                    <Wifi className="h-5 w-5" />
+                    <span className="text-sm font-semibold">API</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Status message for API fetch */}
+      {fetchStatus.type && (
+        <div className="max-w-md mx-auto px-4 pt-4">
+          <div className={`rounded-lg p-3 ${
+            fetchStatus.type === 'success' 
+              ? 'bg-green-900/30 border border-green-700 text-green-300' 
+              : 'bg-red-900/30 border border-red-700 text-red-300'
+          }`}>
+            <div className="flex items-center gap-2">
+              {fetchStatus.type === 'success' ? (
+                <Wifi className="h-4 w-4" />
+              ) : (
+                <WifiOff className="h-4 w-4" />
+              )}
+              <span className="text-sm">{fetchStatus.message}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Formulář pro přidání/editaci záznamu - now just below header */}
       {showAddForm && (
@@ -864,6 +1029,7 @@ const KilometersTracker: React.FC = () => {
           </div>
         </div>
       )}
+
 
       <div className="max-w-md mx-auto px-4 py-6 space-y-6">
         {/* Statistiky */}
