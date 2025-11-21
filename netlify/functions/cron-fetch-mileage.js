@@ -310,8 +310,8 @@ async function appendRow(record) {
   });
 }
 
-// Schedule: Run daily at 10:22 UTC (12:22 CEST - letní čas)
-exports.schedule = "22 10 * * *";
+// Schedule: Run daily at 11:25 UTC (12:25 CET - zimní čas)
+exports.schedule = "25 11 * * *";
 
 exports.handler = async (event, context) => {
   console.log('CRON fetch mileage function called at:', new Date().toISOString());
