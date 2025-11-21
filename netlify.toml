@@ -7,7 +7,7 @@
 
 # Scheduled function configuration
 [functions."cron-fetch-mileage"]
-  schedule = "25 11 * * *"
+  schedule = "30 11 * * *"
 
 [[redirects]]
   from = "/api/fetch-mileage"

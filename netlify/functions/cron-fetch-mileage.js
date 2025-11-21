@@ -330,9 +330,9 @@ async function updateRow(id, newData) {
   return true;
 }
 
-// Schedule: Run daily at 11:25 UTC (12:25 CET - zimní čas)
+// Schedule: Run daily at 11:30 UTC (12:30 CET - zimní čas)
 exports.config = {
-  schedule: "25 11 * * *"
+  schedule: "30 11 * * *"
 };
 
 exports.handler = async (event, context) => {
