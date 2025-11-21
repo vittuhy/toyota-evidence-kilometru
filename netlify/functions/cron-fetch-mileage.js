@@ -50,6 +50,16 @@ try {
   };
 }
 
+// Helper function to add timeout to fetch requests
+function fetchWithTimeout(url, options, timeoutMs = 3000) {
+  return Promise.race([
+    fetch(url, options),
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms`)), timeoutMs)
+    )
+  ]);
+}
+
 async function fetchToyotaMileage() {
   const username = process.env.TOYOTA_USERNAME;
   const password = process.env.TOYOTA_PASSWORD;
