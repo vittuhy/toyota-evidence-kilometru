@@ -14,9 +14,10 @@ jobs:
       - name: Call Netlify CRON Function
         run: |
           echo "Calling CRON endpoint at $(date)"
-          response=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST https://evidence.vtuhy.cz/api/cron-fetch-mileage)
-          echo "$response"
-          http_code=$(echo "$response" | grep "HTTP_CODE" | cut -d: -f2)
+          http_code=$(curl -s -o /tmp/response.json -w "%{http_code}" -X POST https://evidence.vtuhy.cz/api/cron-fetch-mileage)
+          echo "HTTP Status Code: $http_code"
+          echo "Response:"
+          cat /tmp/response.json
           if [ "$http_code" = "200" ]; then
             echo "✅ CRON executed successfully"
             exit 0
