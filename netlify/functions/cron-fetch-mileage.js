@@ -85,7 +85,7 @@ async function fetchToyotaMileage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(authData),
-      }, 5000);
+      }, 3000);
       
       if (!authResponse.ok) {
         throw new Error(`Authentication failed: ${authResponse.status} ${authResponse.statusText}`);
@@ -362,9 +362,17 @@ exports.handler = async (event, context) => {
       throw new Error('Missing Google Service Account credentials in environment variables');
     }
     
-    // Fetch mileage from Toyota API
+    // Fetch mileage from Toyota API with timeout check
     console.log('Fetching mileage from Toyota API...');
-    const mileageData = await fetchToyotaMileage();
+    const mileageDataPromise = fetchToyotaMileage();
+    
+    // Race against function timeout (9 seconds to leave 1s for response)
+    const mileageData = await Promise.race([
+      mileageDataPromise,
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Function timeout - data may still be saved')), 9000)
+      )
+    ]);
     
     if (!mileageData.success) {
       console.error('Failed to fetch mileage:', mileageData.error);
