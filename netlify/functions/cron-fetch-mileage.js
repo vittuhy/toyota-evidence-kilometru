@@ -273,12 +273,20 @@ async function fetchToyotaMileage() {
 }
 
 function getDoc() {
-  const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
-  const auth = new google.auth.GoogleAuth({
-    credentials: creds,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-  return google.sheets({ version: 'v4', auth });
+  try {
+    if (!process.env.GOOGLE_SERVICE_ACCOUNT) {
+      throw new Error('GOOGLE_SERVICE_ACCOUNT environment variable is not set');
+    }
+    const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+    const auth = new google.auth.GoogleAuth({
+      credentials: creds,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    return google.sheets({ version: 'v4', auth });
+  } catch (error) {
+    console.error('Error in getDoc():', error);
+    throw new Error(`Failed to initialize Google Sheets client: ${error.message}`);
+  }
 }
 
 async function getRows() {
@@ -352,7 +360,18 @@ exports.handler = async (event, context) => {
   }
   
   try {
+    console.log('Starting CRON fetch mileage process...');
+    
+    // Check environment variables
+    if (!process.env.TOYOTA_USERNAME || !process.env.TOYOTA_PASSWORD) {
+      throw new Error('Missing Toyota credentials in environment variables');
+    }
+    if (!process.env.GOOGLE_SERVICE_ACCOUNT) {
+      throw new Error('Missing Google Service Account credentials in environment variables');
+    }
+    
     // Fetch mileage from Toyota API
+    console.log('Fetching mileage from Toyota API...');
     const mileageData = await fetchToyotaMileage();
     
     if (!mileageData.success) {
@@ -362,10 +381,13 @@ exports.handler = async (event, context) => {
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
         body: JSON.stringify({ 
           success: false,
-          error: mileageData.error || 'Failed to fetch mileage'
+          error: mileageData.error || 'Failed to fetch mileage',
+          step: 'toyota_api_fetch'
         }),
       };
     }
+    
+    console.log(`Successfully fetched mileage: ${mileageData.mileage} km`);
     
     const today = new Date().toISOString().slice(0, 10);
     const fetchedMileage = mileageData.mileage;
@@ -373,11 +395,25 @@ exports.handler = async (event, context) => {
     // Get existing records
     let rows;
     try {
+      console.log('Reading existing records from Google Sheets...');
       rows = await getRows();
       console.log(`Found ${rows.length} existing records`);
     } catch (error) {
       console.error('Error getting rows from Google Sheets:', error);
-      throw new Error(`Failed to read Google Sheets: ${error.message}`);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      return {
+        statusCode: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        body: JSON.stringify({ 
+          success: false,
+          error: `Failed to read Google Sheets: ${error.message}`,
+          step: 'google_sheets_read'
+        }),
+      };
     }
     
     // Check if record for today already exists
@@ -388,14 +424,28 @@ exports.handler = async (event, context) => {
       // If same date, same mileage - update source to CRON if not already CRON
       if (todayRecord.totalKm === fetchedMileage) {
         if (todayRecord.source !== 'CRON') {
-          // Update source to CRON to mark it as fetched by CRON
-          await updateRow(todayRecord.id, {
-            date: todayRecord.date,
-            totalKm: todayRecord.totalKm,
-            createdAt: todayRecord.createdAt,
-            source: 'CRON'
-          });
-          console.log(`Updated source to CRON for today's record: ${fetchedMileage} km`);
+          try {
+            // Update source to CRON to mark it as fetched by CRON
+            console.log(`Updating source to CRON for record ID ${todayRecord.id}...`);
+            await updateRow(todayRecord.id, {
+              date: todayRecord.date,
+              totalKm: todayRecord.totalKm,
+              createdAt: todayRecord.createdAt,
+              source: 'CRON'
+            });
+            console.log(`Updated source to CRON for today's record: ${fetchedMileage} km`);
+          } catch (error) {
+            console.error('Error updating row:', error);
+            return {
+              statusCode: 500,
+              headers: { 'Content-Type': 'application/json', ...corsHeaders },
+              body: JSON.stringify({ 
+                success: false,
+                error: `Failed to update row: ${error.message}`,
+                step: 'google_sheets_update'
+              }),
+            };
+          }
         } else {
           console.log(`Today's record already exists with same mileage and CRON source: ${fetchedMileage} km`);
         }
@@ -410,13 +460,27 @@ exports.handler = async (event, context) => {
         };
       } else {
         // Same date, different mileage - update existing record (no duplicate!)
-        await updateRow(todayRecord.id, {
-          date: today,
-          totalKm: fetchedMileage,
-          createdAt: new Date().toISOString(),
-          source: 'CRON'
-        });
-        console.log(`Updated existing record for today: ${fetchedMileage} km`);
+        try {
+          console.log(`Updating existing record ID ${todayRecord.id} with new mileage...`);
+          await updateRow(todayRecord.id, {
+            date: today,
+            totalKm: fetchedMileage,
+            createdAt: new Date().toISOString(),
+            source: 'CRON'
+          });
+          console.log(`Updated existing record for today: ${fetchedMileage} km`);
+        } catch (error) {
+          console.error('Error updating row:', error);
+          return {
+            statusCode: 500,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders },
+            body: JSON.stringify({ 
+              success: false,
+              error: `Failed to update row: ${error.message}`,
+              step: 'google_sheets_update'
+            }),
+          };
+        }
         return {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -429,15 +493,34 @@ exports.handler = async (event, context) => {
       }
     } else {
       // No record for today - create new record
-      const newRecord = {
-        id: Date.now(),
-        date: today,
-        totalKm: fetchedMileage,
-        createdAt: new Date().toISOString(),
-        source: 'CRON'
-      };
-      await appendRow(newRecord);
-      console.log(`Created new record for today: ${fetchedMileage} km`);
+      try {
+        const newRecord = {
+          id: Date.now(),
+          date: today,
+          totalKm: fetchedMileage,
+          createdAt: new Date().toISOString(),
+          source: 'CRON'
+        };
+        console.log(`Creating new record:`, newRecord);
+        await appendRow(newRecord);
+        console.log(`Created new record for today: ${fetchedMileage} km`);
+      } catch (error) {
+        console.error('Error appending row:', error);
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+        return {
+          statusCode: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          body: JSON.stringify({ 
+            success: false,
+            error: `Failed to append row: ${error.message}`,
+            step: 'google_sheets_append'
+          }),
+        };
+      }
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -451,6 +534,12 @@ exports.handler = async (event, context) => {
   } catch (error) {
     console.error('CRON function error:', error);
     console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
     // Even on error, return proper JSON response
     return {
       statusCode: 500,
@@ -459,6 +548,7 @@ exports.handler = async (event, context) => {
         success: false,
         error: 'Internal server error',
         message: error.message || 'Unknown error',
+        step: 'unknown',
         stack: process.env.NETLIFY_DEV ? error.stack : undefined // Only include stack in dev
       }),
     };
