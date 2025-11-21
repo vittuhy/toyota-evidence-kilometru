@@ -33,7 +33,7 @@ Go to your Netlify dashboard → Site settings → Environment variables and add
 
 1. **`TOYOTA_USERNAME`**
    - Value: Your Toyota Connected Services email
-   - Example: `vituhy@gmail.com`
+   - Example: `your.email@example.com`
    - Mark as: Not sensitive (but can be marked sensitive)
 
 2. **`TOYOTA_PASSWORD`**
