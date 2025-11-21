@@ -273,20 +273,12 @@ async function fetchToyotaMileage() {
 }
 
 function getDoc() {
-  try {
-    if (!process.env.GOOGLE_SERVICE_ACCOUNT) {
-      throw new Error('GOOGLE_SERVICE_ACCOUNT environment variable is not set');
-    }
-    const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
-    const auth = new google.auth.GoogleAuth({
-      credentials: creds,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-    return google.sheets({ version: 'v4', auth });
-  } catch (error) {
-    console.error('Error in getDoc():', error);
-    throw new Error(`Failed to initialize Google Sheets client: ${error.message}`);
-  }
+  const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+  const auth = new google.auth.GoogleAuth({
+    credentials: creds,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+  return google.sheets({ version: 'v4', auth });
 }
 
 async function getRows() {
